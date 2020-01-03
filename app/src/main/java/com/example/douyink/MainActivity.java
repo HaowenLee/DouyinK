@@ -4,6 +4,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
@@ -17,6 +18,9 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -90,6 +94,8 @@ public class MainActivity extends AppCompatActivity {
                 for (Element el : video) {
                     String videoUrl = el.attr("src");
                     videoUrl = videoUrl.replace("playwm", "play");
+                    // 获取重定向的URL
+                    videoUrl = getRealUrl(videoUrl);
                     emitter.onNext(videoUrl);
                 }
                 emitter.onComplete();
@@ -101,6 +107,9 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void accept(String videoUrl) {
                         tvResult.setText(videoUrl);
+                        Intent intent = new Intent(MainActivity.this, SimplePlayer.class);
+                        intent.putExtra("video_url", videoUrl);
+                        startActivity(intent);
                     }
                 }, new Consumer<Throwable>() {
                     @Override
@@ -111,7 +120,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * //获取完整的域名
+     * 获取完整的域名
      *
      * @param text 获取浏览器分享出来的text文本
      */
@@ -120,6 +129,32 @@ public class MainActivity extends AppCompatActivity {
         Matcher matcher = p.matcher(text);
         matcher.find();
         return matcher.group();
+    }
+
+    private String getRealUrl(String urlStr) {
+        String realUrl = urlStr;
+        try {
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("user-agent", "Mozilla/5.0.html (iPhone; U; CPU iPhone OS 4_3_3 like Mac " +
+                    "OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) " +
+                    "Version/5.0.html.2 Mobile/8J2 Safari/6533.18.5 ");
+            conn.setInstanceFollowRedirects(false);
+            int code = conn.getResponseCode();
+            String redirectUrl = "";
+            if (302 == code) {
+                redirectUrl = conn.getHeaderField("Location");
+            }
+            if (redirectUrl != null && !redirectUrl.equals("")) {
+                realUrl = redirectUrl;
+            }
+            conn.disconnect();
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return realUrl;
     }
 
     public void onResultClick(View view) {
