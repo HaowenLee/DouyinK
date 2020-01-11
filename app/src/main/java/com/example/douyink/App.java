@@ -1,13 +1,10 @@
 package com.example.douyink;
 
 import android.app.Application;
-import android.content.Context;
 
 import androidx.multidex.MultiDex;
 
 import com.blankj.utilcode.util.Utils;
-import com.github.piasy.biv.BigImageViewer;
-import com.github.piasy.biv.loader.glide.GlideImageLoader;
 
 /**
  * ================================================

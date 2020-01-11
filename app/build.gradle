@@ -31,27 +31,17 @@ dependencies {
     testImplementation 'junit:junit:4.12'
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
+    implementation 'com.android.support:multidex:1.0.3'
 
+    // html解析
     implementation 'org.jsoup:jsoup:1.12.1'
+    // RxJava
     implementation 'io.reactivex.rxjava2:rxjava:2.2.12'
     implementation 'io.reactivex.rxjava2:rxandroid:2.1.1'
-
+    // 播放器
     implementation 'com.shuyu:GSYVideoPlayer:7.1.2'
     implementation 'com.liulishuo.filedownloader:library:1.7.7'
     implementation 'com.blankj:utilcode:1.26.0'
-
+    // 6.0权限
     implementation 'com.github.tbruyelle:rxpermissions:0.10.2'
-
-    implementation 'com.github.piasy:BigImageViewer:1.6.2'
-    // load with glide
-    implementation 'com.github.piasy:GlideImageLoader:1.6.2'
-    // support thumbnail and gif with Glide
-    implementation 'com.github.piasy:GlideImageViewFactory:1.6.2'
-
-    implementation 'com.github.bumptech.glide:glide:4.10.0'
-    annotationProcessor 'com.github.bumptech.glide:compiler:4.10.0'
-
-    implementation 'com.android.support:multidex:1.0.3'
-
-    implementation 'com.squareup.okhttp3:okhttp:4.2.2'
 }
