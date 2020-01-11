@@ -139,6 +139,9 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * 获取重定向地址
+     */
     private String getRealUrl(String urlStr) {
         String realUrl = urlStr;
         try {
