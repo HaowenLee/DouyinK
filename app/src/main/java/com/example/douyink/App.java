@@ -25,7 +25,5 @@ public class App extends Application {
         MultiDex.install(this);
 
         Utils.init(this);
-        // or load with glide
-        // BigImageViewer.initialize(GlideImageLoader.with(this, UnsafeOkHttpClient.getUnsafeOkHttpClient()));
     }
 }

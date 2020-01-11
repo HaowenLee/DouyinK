@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.blankj.utilcode.util.EncryptUtils;
+import com.blankj.utilcode.util.LogUtils;
 import com.blankj.utilcode.util.PathUtils;
 import com.liulishuo.filedownloader.BaseDownloadTask;
 import com.liulishuo.filedownloader.FileDownloadListener;
@@ -28,17 +29,18 @@ import io.reactivex.disposables.Disposable;
  * ================================================
  * 作    者：Herve、Li
  * 创建日期：2020/1/3
- * 描    述：
+ * 描    述：视频播放
  * 修订历史：
  * ================================================
  */
-public class SimplePlayer extends AppCompatActivity {
+public class VideoPlayActivity extends AppCompatActivity {
 
-    StandardGSYVideoPlayer videoPlayer;
+    private StandardGSYVideoPlayer videoPlayer;
 
-    OrientationUtils orientationUtils;
+    private OrientationUtils orientationUtils;
 
     private String videoUrl;
+    private String videoTitle;
 
     private Disposable subscribe;
 
@@ -49,6 +51,7 @@ public class SimplePlayer extends AppCompatActivity {
 
         Intent intent = getIntent();
         videoUrl = intent.getStringExtra("video_url");
+        videoTitle = intent.getStringExtra("video_title");
 
         init();
 
@@ -66,22 +69,27 @@ public class SimplePlayer extends AppCompatActivity {
     private void init() {
         videoPlayer = findViewById(R.id.video_player);
 
-        videoPlayer.setUp(videoUrl, true, "测试视频");
-        //增加title
+        videoPlayer.setUp(videoUrl, true, videoTitle == null ? "" : videoTitle);
+        // 增加title
         videoPlayer.getTitleTextView().setVisibility(View.VISIBLE);
-        //设置返回键
+        // 设置返回键
         videoPlayer.getBackButton().setVisibility(View.VISIBLE);
-        //设置旋转
+        // 设置旋转
         orientationUtils = new OrientationUtils(this, videoPlayer);
-        //设置全屏按键功能,这是使用的是选择屏幕，而不是全屏
+        // 设置全屏按键功能,这是使用的是选择屏幕，而不是全屏
         videoPlayer.getFullscreenButton().setOnClickListener(v -> orientationUtils.resolveByClick());
-        //是否可以滑动调整
+        // 是否可以滑动调整
         videoPlayer.setIsTouchWiget(true);
-        //设置返回按键功能
+        // 设置返回按键功能
         videoPlayer.getBackButton().setOnClickListener(v -> onBackPressed());
         videoPlayer.startPlayLogic();
     }
 
+    /**
+     * 下载视频
+     *
+     * @param url 链接地址
+     */
     private void download(String url) {
         String externalMoviesPath = PathUtils.getExternalMoviesPath() + File.separator + EncryptUtils.encryptMD5ToString(videoUrl) + ".mp4";
         FileDownloader.setup(this);
@@ -95,7 +103,7 @@ public class SimplePlayer extends AppCompatActivity {
                     @Override
                     protected void started(BaseDownloadTask task) {
                         super.started(task);
-                        Toast.makeText(SimplePlayer.this, "视频开始下载", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(VideoPlayActivity.this, "视频开始下载", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -116,7 +124,7 @@ public class SimplePlayer extends AppCompatActivity {
 
                     @Override
                     protected void completed(BaseDownloadTask task) {
-                        Toast.makeText(SimplePlayer.this, "视频下载完成", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(VideoPlayActivity.this, "视频下载完成", Toast.LENGTH_SHORT).show();
                         update(task.getPath());
                     }
 
@@ -126,7 +134,7 @@ public class SimplePlayer extends AppCompatActivity {
 
                     @Override
                     protected void error(BaseDownloadTask task, Throwable e) {
-                        Toast.makeText(SimplePlayer.this, "视频下载出错", Toast.LENGTH_SHORT).show();
+                        Toast.makeText(VideoPlayActivity.this, "视频下载出错", Toast.LENGTH_SHORT).show();
                     }
 
                     @Override
@@ -137,12 +145,12 @@ public class SimplePlayer extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        //先返回正常状态
+        // 先返回正常状态
         if (orientationUtils.getScreenType() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
             videoPlayer.getFullscreenButton().performClick();
             return;
         }
-        //释放所有
+        // 释放所有
         videoPlayer.setVideoAllCallBack(null);
         super.onBackPressed();
     }
