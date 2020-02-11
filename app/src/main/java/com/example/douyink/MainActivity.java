@@ -20,14 +20,17 @@ import org.jsoup.select.Elements;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
 import io.reactivex.FlowableOnSubscribe;
+import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
@@ -35,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private EditText editText;
     private TextView tvResult;
     private Disposable subscribe;
+    private Disposable qSubscribe;
 
     private static final String userAgent = "Mozilla/5.0.html (iPhone; U; CPU iPhone OS 4_3_3 like Mac " +
             "OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) " +
@@ -55,15 +59,27 @@ public class MainActivity extends AppCompatActivity {
         if (subscribe != null && !subscribe.isDisposed()) {
             subscribe.dispose();
         }
+        if (qSubscribe != null && !qSubscribe.isDisposed()) {
+            qSubscribe.dispose();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        String shareText = getShareText();
-        if (!TextUtils.isEmpty(shareText) && shareText.contains(" https://v.douyin.com/")) {
-            editText.setText(shareText);
+        if (qSubscribe != null && !qSubscribe.isDisposed()) {
+            qSubscribe.dispose();
         }
+        // 延迟获取，Android Q 以上问题
+        qSubscribe = Flowable.timer(500, TimeUnit.MILLISECONDS)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(aLong -> {
+                    String shareText = getShareText();
+                    if (!TextUtils.isEmpty(shareText) && shareText.contains(" https://v.douyin.com/")) {
+                        editText.setText(shareText);
+                    }
+                });
     }
 
     /**

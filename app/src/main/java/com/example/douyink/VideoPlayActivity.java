@@ -56,7 +56,7 @@ public class VideoPlayActivity extends AppCompatActivity {
         init();
 
         subscribe = new RxPermissions(this)
-                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                .request(Manifest.permission.WRITE_EXTERNAL_STORAGE, Manifest.permission.READ_EXTERNAL_STORAGE)
                 .subscribe(granted -> {
                     if (granted) {
                         download(videoUrl);
@@ -91,7 +91,7 @@ public class VideoPlayActivity extends AppCompatActivity {
      * @param url 链接地址
      */
     private void download(String url) {
-        String externalMoviesPath = PathUtils.getExternalMoviesPath() + File.separator + EncryptUtils.encryptMD5ToString(videoUrl) + ".mp4";
+        String externalMoviesPath = PathUtils.getInternalAppDataPath() + File.separator + EncryptUtils.encryptMD5ToString(videoUrl) + ".mp4";
         FileDownloader.setup(this);
         FileDownloader.getImpl().create(url)
                 .setPath(externalMoviesPath)
@@ -134,6 +134,7 @@ public class VideoPlayActivity extends AppCompatActivity {
 
                     @Override
                     protected void error(BaseDownloadTask task, Throwable e) {
+                        e.printStackTrace();
                         Toast.makeText(VideoPlayActivity.this, "视频下载出错", Toast.LENGTH_SHORT).show();
                     }
 
