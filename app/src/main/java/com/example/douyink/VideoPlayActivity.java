@@ -1,17 +1,21 @@
 package com.example.douyink;
 
 import android.Manifest;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
+import android.content.res.AssetFileDescriptor;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.MediaStore;
 import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.blankj.utilcode.util.EncryptUtils;
-import com.blankj.utilcode.util.LogUtils;
+import com.blankj.utilcode.util.FileUtils;
 import com.blankj.utilcode.util.PathUtils;
 import com.liulishuo.filedownloader.BaseDownloadTask;
 import com.liulishuo.filedownloader.FileDownloadListener;
@@ -22,8 +26,16 @@ import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.FlowableOnSubscribe;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * ================================================
@@ -43,6 +55,7 @@ public class VideoPlayActivity extends AppCompatActivity {
     private String videoTitle;
 
     private Disposable subscribe;
+    private Disposable cSubscribe;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -86,15 +99,28 @@ public class VideoPlayActivity extends AppCompatActivity {
     }
 
     /**
+     * 新增文件
+     */
+    private Uri createFile(String fileName) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.Files.FileColumns.DISPLAY_NAME, fileName);
+        contentValues.put(MediaStore.Video.VideoColumns.MIME_TYPE, "video/mp4");
+        return getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+    }
+
+    /**
      * 下载视频
      *
      * @param url 链接地址
      */
     private void download(String url) {
-        String externalMoviesPath = PathUtils.getInternalAppDataPath() + File.separator + EncryptUtils.encryptMD5ToString(videoUrl) + ".mp4";
+        String internalMoviesPath = PathUtils.getExternalAppDownloadPath() + File.separator + EncryptUtils.encryptMD5ToString(videoUrl) + ".mp4";
+
+        Uri uri = createFile(EncryptUtils.encryptMD5ToString(videoUrl) + ".mp4");
+
         FileDownloader.setup(this);
         FileDownloader.getImpl().create(url)
-                .setPath(externalMoviesPath)
+                .setPath(internalMoviesPath)
                 .setListener(new FileDownloadListener() {
                     @Override
                     protected void pending(BaseDownloadTask task, int soFarBytes, int totalBytes) {
@@ -124,8 +150,8 @@ public class VideoPlayActivity extends AppCompatActivity {
 
                     @Override
                     protected void completed(BaseDownloadTask task) {
-                        Toast.makeText(VideoPlayActivity.this, "视频下载完成", Toast.LENGTH_SHORT).show();
-                        update(task.getPath());
+                        copyFile(task.getPath(), uri);
+                        FileUtils.notifySystemToScan(uri.getPath());
                     }
 
                     @Override
@@ -144,6 +170,29 @@ public class VideoPlayActivity extends AppCompatActivity {
                 }).start();
     }
 
+    /**
+     * 文件复制到外部
+     */
+    private void copyFile(String path, Uri uri) {
+        if (cSubscribe != null && !cSubscribe.isDisposed()) {
+            cSubscribe.dispose();
+        }
+        cSubscribe = Flowable.create((FlowableOnSubscribe<String>) emitter -> {
+            // 文件存储适配Android Q
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                FileUtils.copy(path, PathUtils.getExternalMoviesPath());
+            } else {
+                writeFile(path, uri);
+            }
+            emitter.onNext("成功");
+        }, BackpressureStrategy.BUFFER)
+                .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(s -> {
+                    Toast.makeText(VideoPlayActivity.this, "视频下载完成", Toast.LENGTH_SHORT).show();
+                }, Throwable::printStackTrace);
+    }
+
     @Override
     public void onBackPressed() {
         // 先返回正常状态
@@ -157,13 +206,22 @@ public class VideoPlayActivity extends AppCompatActivity {
     }
 
     /**
-     * 媒体文件系统更新通知
+     * 对文件进行写操作
      */
-    private void update(String path) {
-        Intent intent = new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE);
-        Uri uri = Uri.fromFile(new File(path));
-        intent.setData(uri);
-        sendBroadcast(intent);
+    private void writeFile(String path, Uri uri) {
+        try {
+            AssetFileDescriptor assetFileDescriptor = getContentResolver().openAssetFileDescriptor(uri, "rw");
+            FileOutputStream os = assetFileDescriptor.createOutputStream();
+            FileInputStream is = new FileInputStream(path);
+            byte[] data = new byte[8192];
+            int len;
+            while ((len = is.read(data, 0, 8192)) != -1) {
+                os.write(data, 0, len);
+            }
+            os.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -176,6 +234,9 @@ public class VideoPlayActivity extends AppCompatActivity {
         if (subscribe != null && !subscribe.isDisposed()) {
             subscribe.dispose();
             subscribe = null;
+        }
+        if (cSubscribe != null && !cSubscribe.isDisposed()) {
+            cSubscribe.dispose();
         }
     }
 
