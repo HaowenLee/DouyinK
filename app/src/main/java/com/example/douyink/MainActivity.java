@@ -40,9 +40,7 @@ public class MainActivity extends AppCompatActivity {
     private Disposable subscribe;
     private Disposable qSubscribe;
 
-    private static final String userAgent = "Mozilla/5.0.html (iPhone; U; CPU iPhone OS 4_3_3 like Mac " +
-            "OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) " +
-            "Version/5.0.html.2 Mobile/8J2 Safari/6533.18.5";
+    private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/60.0.3100.0 Safari/537.36";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -119,14 +117,12 @@ public class MainActivity extends AppCompatActivity {
         }
         subscribe = Flowable.create((FlowableOnSubscribe<String>) emitter -> {
             Document doc = Jsoup.connect(url).userAgent(userAgent).get();
-            Elements video = doc.select("video[src]");
-            for (Element el : video) {
-                String videoUrl = el.attr("src");
-                videoUrl = videoUrl.replace("playwm", "play");
-                // 获取重定向的URL
-                videoUrl = getRealUrl(videoUrl);
-                emitter.onNext(videoUrl);
-            }
+            String html = doc.toString();
+            String videoUrl = getVideoCompleteUrl(html);
+            videoUrl = videoUrl.replace("playwm", "play");
+            // 获取重定向的URL
+            videoUrl = getRealUrl(videoUrl);
+            emitter.onNext(videoUrl);
             emitter.onComplete();
         }, BackpressureStrategy.BUFFER)
                 .subscribeOn(Schedulers.io())
@@ -137,6 +133,23 @@ public class MainActivity extends AppCompatActivity {
                     intent.putExtra("video_url", videoUrl);
                     startActivity(intent);
                 }, Throwable::printStackTrace);
+    }
+
+    /**
+     * 获取视频的播放地址
+     * 正则匹配playAddr: "视频地址"
+     *
+     * @param text 获取浏览器分享出来的text文本
+     */
+    public static String getVideoCompleteUrl(String text) {
+        Pattern p = Pattern.compile("playAddr: \"((http|ftp|https)://)(([a-zA-Z0-9._-]+\\.[a-zA-Z]{2,6})|([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}))(:[0-9]{1,4})*(/[a-zA-Z0-9&%_./-~-]*)?", Pattern.CASE_INSENSITIVE);
+        Matcher matcher = p.matcher(text);
+        boolean find = matcher.find();
+        if (find) {
+            return matcher.group().replace("playAddr: \"", "");
+        } else {
+            return "";
+        }
     }
 
     /**
