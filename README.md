@@ -9,3 +9,7 @@
 ### 下载链接
 
 [APP下载](https://gitee.com/haowenhello/DouyinK/raw/master/apks/douyink.apk)
+
+### 历史记录
+
+- 获取视频播放地址逻辑修改（2020-04-29）
