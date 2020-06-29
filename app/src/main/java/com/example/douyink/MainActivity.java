@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -13,11 +14,11 @@ import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.blankj.utilcode.util.LogUtils;
+import com.blankj.utilcode.util.ToastUtils;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -26,22 +27,17 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.reactivex.BackpressureStrategy;
 import io.reactivex.Flowable;
-import io.reactivex.FlowableOnSubscribe;
-import io.reactivex.Scheduler;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
-import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String userAgent = "mozilla/5.0 (Linux; U; Android 5.1; zh-cn; OPPO R9tm Build/LMY47I) AppleWebKit/537.36 (KHTML, like Gecko)Version/4.0 Chrome/37.0.0.0 MQQBrowser/7.5 Mobile Safari/537.36";
     private EditText editText;
     private TextView tvResult;
     private KWebView webView;
-    private Disposable subscribe;
+    private Button button;
     private Disposable qSubscribe;
 
     /**
@@ -69,22 +65,82 @@ public class MainActivity extends AppCompatActivity {
         tvResult = findViewById(R.id.tvResult);
         editText = findViewById(R.id.editText);
         webView = findViewById(R.id.webView);
+        button = findViewById(R.id.button);
 
-        webView.loadUrl("https://www.iesdouyin.com/share/video/6841805677279579406/?region=CN&mid=6823172944551103240&u_code=14fai9b88&titleType=title&utm_source=copy_link&utm_campaign=client_share&utm_medium=android&app=aweme");
-        webView.setHtmlCallback(html -> {
-            System.out.println(html);
-        });
+        // 网页内容获取回调
+        webView.setHtmlCallback(this::parseHtml);
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (subscribe != null && !subscribe.isDisposed()) {
-            subscribe.dispose();
-        }
         if (qSubscribe != null && !qSubscribe.isDisposed()) {
             qSubscribe.dispose();
         }
+    }
+
+    /**
+     * 解析网页获取视频播放地址
+     */
+    private void parseHtml(String html) {
+        Document document = Jsoup.parse(html);
+        if (document == null) {
+            runOnUiThread(() -> ToastUtils.showShort("网页内容获取失败"));
+            return;
+        }
+        Element theVideo = document.getElementById("theVideo");
+        if (theVideo == null) {
+            runOnUiThread(() -> ToastUtils.showShort("视频标签获取失败"));
+            return;
+        }
+        String videoUrl = theVideo.attr("src");
+        if (TextUtils.isEmpty(videoUrl)) {
+            runOnUiThread(() -> ToastUtils.showShort("视频地址获取失败"));
+            return;
+        }
+        videoUrl = videoUrl.replace("playwm", "play");
+        // 获取重定向的URL
+        String finalVideoUrl = getRealUrl(videoUrl);
+        if (TextUtils.isEmpty(finalVideoUrl)) {
+            runOnUiThread(() -> ToastUtils.showShort("重新想地址获取失败"));
+            return;
+        }
+        // 跳转下载和视频播放页
+        runOnUiThread(() -> {
+            button.setText("开始解析");
+            tvResult.setText(finalVideoUrl);
+            Intent intent = new Intent(MainActivity.this, VideoPlayActivity.class);
+            intent.putExtra("video_url", finalVideoUrl);
+            startActivity(intent);
+        });
+    }
+
+    /**
+     * 获取重定向地址
+     */
+    private String getRealUrl(String urlStr) {
+        String realUrl = urlStr;
+        LogUtils.i("链接地址：" + urlStr);
+        try {
+            URL url = new URL(urlStr);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("user-agent", "Mozilla/5.0.html (iPhone; U; CPU iPhone OS 4_3_3 like Mac " +
+                    "OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) " +
+                    "Version/5.0.html.2 Mobile/8J2 Safari/6533.18.5 ");
+            conn.setInstanceFollowRedirects(false);
+            int code = conn.getResponseCode();
+            String redirectUrl = "";
+            if (302 == code) {
+                redirectUrl = conn.getHeaderField("Location");
+            }
+            if (redirectUrl != null && !redirectUrl.equals("")) {
+                realUrl = redirectUrl;
+            }
+            conn.disconnect();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return realUrl;
     }
 
     @Override
@@ -131,34 +187,13 @@ public class MainActivity extends AppCompatActivity {
      * 开始解析
      */
     public void button(View view) {
+        button.setText("解析中...");
         final String url = getCompleteUrl(editText.getText().toString());
         if (TextUtils.isEmpty(url)) {
             Toast.makeText(this, "未找到抖音分享链接", Toast.LENGTH_SHORT).show();
             return;
         }
         webView.loadUrl(url);
-        // 解析到url
-        if (subscribe != null && !subscribe.isDisposed()) {
-            subscribe.dispose();
-        }
-        subscribe = Flowable.create((FlowableOnSubscribe<String>) emitter -> {
-            Document doc = Jsoup.connect(url).userAgent(userAgent).get();
-            // 获取播放地址
-            String videoUrl = getVideoCompleteUrl(doc.body().toString());
-            videoUrl = videoUrl.replace("playwm", "play");
-            // 获取重定向的URL
-            videoUrl = getRealUrl(videoUrl);
-            emitter.onNext(videoUrl);
-            emitter.onComplete();
-        }, BackpressureStrategy.BUFFER)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(videoUrl -> {
-                    tvResult.setText(videoUrl);
-                    Intent intent = new Intent(MainActivity.this, VideoPlayActivity.class);
-                    intent.putExtra("video_url", videoUrl);
-                    startActivity(intent);
-                }, Throwable::printStackTrace);
     }
 
     /**
@@ -177,44 +212,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 获取视频的播放地址
-     * 正则匹配playAddr: "视频地址"
-     */
-    public static String getVideoCompleteUrlV2(Document document) {
-        LogUtils.i(document.toString());
-        Element theVideo = document.getElementById("theVideo");
-        return theVideo.attr("src");
-    }
-
-    /**
-     * 获取重定向地址
-     */
-    private String getRealUrl(String urlStr) {
-        String realUrl = urlStr;
-        LogUtils.i("链接地址：" + urlStr);
-        try {
-            URL url = new URL(urlStr);
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestProperty("user-agent", "Mozilla/5.0.html (iPhone; U; CPU iPhone OS 4_3_3 like Mac " +
-                    "OS X; en-us) AppleWebKit/533.17.9 (KHTML, like Gecko) " +
-                    "Version/5.0.html.2 Mobile/8J2 Safari/6533.18.5 ");
-            conn.setInstanceFollowRedirects(false);
-            int code = conn.getResponseCode();
-            String redirectUrl = "";
-            if (302 == code) {
-                redirectUrl = conn.getHeaderField("Location");
-            }
-            if (redirectUrl != null && !redirectUrl.equals("")) {
-                realUrl = redirectUrl;
-            }
-            conn.disconnect();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return realUrl;
-    }
-
     public void onResultClick(View view) {
         ClipboardManager myClipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
         String text;
@@ -222,7 +219,6 @@ public class MainActivity extends AppCompatActivity {
 
         ClipData myClip = ClipData.newPlainText("text", text);
         myClipboard.setPrimaryClip(myClip);
-
         Toast.makeText(this, text + " 已复制", Toast.LENGTH_SHORT).show();
     }
 }

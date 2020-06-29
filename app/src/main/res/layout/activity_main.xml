@@ -9,9 +9,8 @@
     <com.example.douyink.KWebView
         android:id="@+id/webView"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/button" />
+        android:layout_height="1px"
+        app:layout_constraintBottom_toBottomOf="parent" />
 
     <ImageView
         android:id="@+id/mBigImage"
@@ -25,6 +24,7 @@
         android:layout_height="wrap_content"
         android:hint="输入抖音分享链接"
         android:textIsSelectable="true"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -35,6 +35,7 @@
         android:layout_height="wrap_content"
         android:onClick="button"
         android:text="开始解析"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editText" />

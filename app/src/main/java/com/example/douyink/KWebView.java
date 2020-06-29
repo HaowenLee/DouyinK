@@ -1,16 +1,23 @@
 package com.example.douyink;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import java.util.concurrent.TimeUnit;
+
+import io.reactivex.Observable;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * ================================================
@@ -22,8 +29,8 @@ import android.webkit.WebViewClient;
  */
 public class KWebView extends WebView {
 
-    private static final String userAgent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36";
     private HtmlCallback htmlCallback;
+    private Disposable subscribe;
 
     public KWebView(Context context) {
         super(context);
@@ -31,7 +38,7 @@ public class KWebView extends WebView {
     }
 
     private void init() {
-        WebSettings settings = getSettings();
+        // Dom存储支持
         getSettings().setDomStorageEnabled(true);
         // 设置支持javascript
         getSettings().setJavaScriptEnabled(true);
@@ -39,11 +46,12 @@ public class KWebView extends WebView {
         getSettings().setAppCacheEnabled(true);
         // 设置缓存模式
         getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-        addJavascriptInterface(new InJavaScriptLocalObj(this), "java_obj");
         //允许混合模式（http与https）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+            getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         }
+        // 获取网页内容的Js调用
+        addJavascriptInterface(new InJavaScriptLocalObj(this), "java_obj");
         setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -58,8 +66,16 @@ public class KWebView extends WebView {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                view.loadUrl("javascript:window.java_obj.getSource('<head>'+" +
-                        "document.getElementsByTagName('html')[0].innerHTML+'</head>');");
+                if (subscribe != null && !subscribe.isDisposed()) {
+                    subscribe.dispose();
+                }
+                // 延时获取html内容
+                subscribe = Observable.just(1)
+                        .delay(1, TimeUnit.SECONDS)
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribeOn(Schedulers.single())
+                        .subscribe(integer -> view.loadUrl("javascript:window.java_obj.getSource('<head>'+" +
+                                "document.getElementsByTagName('html')[0].innerHTML+'</head>');"));
                 super.onPageFinished(view, url);
             }
 
@@ -106,6 +122,14 @@ public class KWebView extends WebView {
             if (htmlCallback != null) {
                 htmlCallback.onHtmlGet(html);
             }
+        }
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        if (subscribe != null && !subscribe.isDisposed()) {
+            subscribe.dispose();
         }
     }
 }
