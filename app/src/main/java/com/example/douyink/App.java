@@ -1,6 +1,7 @@
 package com.example.douyink;
 
 import android.app.Application;
+import android.content.Context;
 
 import androidx.multidex.MultiDex;
 
@@ -17,10 +18,14 @@ import com.blankj.utilcode.util.Utils;
 public class App extends Application {
 
     @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(base);
+    }
+
+    @Override
     public void onCreate() {
         super.onCreate();
-        MultiDex.install(this);
-
         Utils.init(this);
     }
 }

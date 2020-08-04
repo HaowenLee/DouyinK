@@ -23,14 +23,8 @@ import org.jsoup.nodes.Element;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import io.reactivex.Flowable;
-import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -38,24 +32,6 @@ public class MainActivity extends AppCompatActivity {
     private TextView tvResult;
     private KWebView webView;
     private Button button;
-    private Disposable qSubscribe;
-
-    /**
-     * 获取视频的播放地址
-     * 正则匹配playAddr: "视频地址"
-     *
-     * @param text 获取浏览器分享出来的text文本
-     */
-    public static String getVideoCompleteUrl(String text) {
-        Pattern p = Pattern.compile("playAddr: \"((http|ftp|https)://)(([a-zA-Z0-9._-]+\\.[a-zA-Z]{2,6})|([0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}))(:[0-9]{1,4})*(/[a-zA-Z0-9&%_./-~-]*)?", Pattern.CASE_INSENSITIVE);
-        Matcher matcher = p.matcher(text);
-        boolean find = matcher.find();
-        if (find) {
-            return matcher.group().replace("playAddr: \"", "");
-        } else {
-            return "";
-        }
-    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -69,14 +45,6 @@ public class MainActivity extends AppCompatActivity {
 
         // 网页内容获取回调
         webView.setHtmlCallback(this::parseHtml);
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (qSubscribe != null && !qSubscribe.isDisposed()) {
-            qSubscribe.dispose();
-        }
     }
 
     /**
@@ -98,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> ToastUtils.showShort("视频地址获取失败"));
             return;
         }
+        // 替换成无水印地址
         videoUrl = videoUrl.replace("playwm", "play");
         // 获取重定向的URL
         String finalVideoUrl = getRealUrl(videoUrl);
@@ -108,6 +77,7 @@ public class MainActivity extends AppCompatActivity {
         // 跳转下载和视频播放页
         runOnUiThread(() -> {
             button.setText("开始解析");
+            button.setEnabled(true);
             tvResult.setText(finalVideoUrl);
             Intent intent = new Intent(MainActivity.this, VideoPlayActivity.class);
             intent.putExtra("video_url", finalVideoUrl);
@@ -144,21 +114,17 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        if (qSubscribe != null && !qSubscribe.isDisposed()) {
-            qSubscribe.dispose();
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (!hasFocus) {
+            return;
         }
-        // 延迟获取，Android Q 以上问题
-        qSubscribe = Flowable.timer(500, TimeUnit.MILLISECONDS)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(aLong -> {
-                    String shareText = getShareText();
-                    if (!TextUtils.isEmpty(shareText) && shareText.contains(" https://v.douyin.com/")) {
-                        editText.setText(shareText);
-                    }
-                });
+        // 在 Android Q（10）中，应用在前台的时候才可以获取到剪切板内容。
+        // https://www.jianshu.com/p/8f2100cd1cc5
+        String shareText = getShareText();
+        if (!TextUtils.isEmpty(shareText) && shareText.contains(" https://v.douyin.com/")) {
+            editText.setText(shareText);
+        }
     }
 
     /**
@@ -187,12 +153,13 @@ public class MainActivity extends AppCompatActivity {
      * 开始解析
      */
     public void button(View view) {
-        button.setText("解析中...");
         final String url = getCompleteUrl(editText.getText().toString());
         if (TextUtils.isEmpty(url)) {
             Toast.makeText(this, "未找到抖音分享链接", Toast.LENGTH_SHORT).show();
             return;
         }
+        button.setText("解析中...");
+        button.setEnabled(false);
         webView.loadUrl(url);
     }
 

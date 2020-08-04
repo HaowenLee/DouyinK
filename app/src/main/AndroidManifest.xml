@@ -30,6 +30,7 @@
         <activity
             android:name=".VideoPlayActivity"
             android:configChanges="keyboard|keyboardHidden|orientation|screenSize|screenLayout|smallestScreenSize|uiMode"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait" />
     </application>
 

@@ -21,6 +21,7 @@ import com.liulishuo.filedownloader.BaseDownloadTask;
 import com.liulishuo.filedownloader.FileDownloadListener;
 import com.liulishuo.filedownloader.FileDownloader;
 import com.shuyu.gsyvideoplayer.GSYVideoManager;
+import com.shuyu.gsyvideoplayer.utils.GSYVideoType;
 import com.shuyu.gsyvideoplayer.utils.OrientationUtils;
 import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
 import com.tbruyelle.rxpermissions2.RxPermissions;
@@ -80,6 +81,9 @@ public class VideoPlayActivity extends AppCompatActivity {
     }
 
     private void init() {
+        // 全屏裁减显示，为了显示正常 CoverImageView 建议使用FrameLayout作为父布局
+        GSYVideoType.setShowType(GSYVideoType.SCREEN_TYPE_FULL);
+
         videoPlayer = findViewById(R.id.video_player);
 
         videoPlayer.setUp(videoUrl, true, videoTitle == null ? "" : videoTitle);
@@ -96,16 +100,6 @@ public class VideoPlayActivity extends AppCompatActivity {
         // 设置返回按键功能
         videoPlayer.getBackButton().setOnClickListener(v -> onBackPressed());
         videoPlayer.startPlayLogic();
-    }
-
-    /**
-     * 新增文件
-     */
-    private Uri createFile(String fileName) {
-        ContentValues contentValues = new ContentValues();
-        contentValues.put(MediaStore.Files.FileColumns.DISPLAY_NAME, fileName);
-        contentValues.put(MediaStore.Video.VideoColumns.MIME_TYPE, "video/mp4");
-        return getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
     }
 
     /**
@@ -170,6 +164,28 @@ public class VideoPlayActivity extends AppCompatActivity {
                 }).start();
     }
 
+    @Override
+    public void onBackPressed() {
+        // 先返回正常状态
+        if (orientationUtils.getScreenType() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
+            videoPlayer.getFullscreenButton().performClick();
+            return;
+        }
+        // 释放所有
+        videoPlayer.setVideoAllCallBack(null);
+        super.onBackPressed();
+    }
+
+    /**
+     * 新增文件
+     */
+    private Uri createFile(String fileName) {
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MediaStore.Files.FileColumns.DISPLAY_NAME, fileName);
+        contentValues.put(MediaStore.Video.VideoColumns.MIME_TYPE, "video/mp4");
+        return getContentResolver().insert(MediaStore.Video.Media.EXTERNAL_CONTENT_URI, contentValues);
+    }
+
     /**
      * 文件复制到外部
      */
@@ -188,21 +204,7 @@ public class VideoPlayActivity extends AppCompatActivity {
         }, BackpressureStrategy.BUFFER)
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(s -> {
-                    Toast.makeText(VideoPlayActivity.this, "视频下载完成", Toast.LENGTH_SHORT).show();
-                }, Throwable::printStackTrace);
-    }
-
-    @Override
-    public void onBackPressed() {
-        // 先返回正常状态
-        if (orientationUtils.getScreenType() == ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE) {
-            videoPlayer.getFullscreenButton().performClick();
-            return;
-        }
-        // 释放所有
-        videoPlayer.setVideoAllCallBack(null);
-        super.onBackPressed();
+                .subscribe(s -> Toast.makeText(VideoPlayActivity.this, "视频下载完成", Toast.LENGTH_SHORT).show(), Throwable::printStackTrace);
     }
 
     /**

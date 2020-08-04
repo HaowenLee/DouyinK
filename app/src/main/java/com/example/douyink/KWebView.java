@@ -1,6 +1,7 @@
 package com.example.douyink;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
@@ -16,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.reactivex.Observable;
 import io.reactivex.android.schedulers.AndroidSchedulers;
-import io.reactivex.disposables.Disposable;
+import io.reactivex.disposables.CompositeDisposable;
 import io.reactivex.schedulers.Schedulers;
 
 /**
@@ -29,14 +30,15 @@ import io.reactivex.schedulers.Schedulers;
  */
 public class KWebView extends WebView {
 
+    private CompositeDisposable compositeDisposable = new CompositeDisposable();
     private HtmlCallback htmlCallback;
-    private Disposable subscribe;
 
     public KWebView(Context context) {
         super(context);
         init();
     }
 
+    @SuppressLint("SetJavaScriptEnabled")
     private void init() {
         // Dom存储支持
         getSettings().setDomStorageEnabled(true);
@@ -46,7 +48,7 @@ public class KWebView extends WebView {
         getSettings().setAppCacheEnabled(true);
         // 设置缓存模式
         getSettings().setCacheMode(WebSettings.LOAD_DEFAULT);
-        //允许混合模式（http与https）
+        // 允许混合模式（http与https）
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             getSettings().setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
         }
@@ -66,16 +68,13 @@ public class KWebView extends WebView {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                if (subscribe != null && !subscribe.isDisposed()) {
-                    subscribe.dispose();
-                }
-                // 延时获取html内容
-                subscribe = Observable.just(1)
-                        .delay(1, TimeUnit.SECONDS)
+                dispose();
+                // 定时轮询获取网页内容，直到获取到有效信息
+                compositeDisposable.add(Observable.interval(200, TimeUnit.MILLISECONDS)
                         .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.single())
+                        .subscribeOn(Schedulers.io())
                         .subscribe(integer -> view.loadUrl("javascript:window.java_obj.getSource('<head>'+" +
-                                "document.getElementsByTagName('html')[0].innerHTML+'</head>');"));
+                                "document.getElementsByTagName('html')[0].innerHTML+'</head>');")));
                 super.onPageFinished(view, url);
             }
 
@@ -84,6 +83,13 @@ public class KWebView extends WebView {
                 super.onReceivedError(view, request, error);
             }
         });
+    }
+
+    /**
+     * 取消订阅
+     */
+    public void dispose() {
+        compositeDisposable.clear();
     }
 
     public KWebView(Context context, AttributeSet attrs) {
@@ -98,6 +104,12 @@ public class KWebView extends WebView {
 
     public void setHtmlCallback(HtmlCallback htmlCallback) {
         this.htmlCallback = htmlCallback;
+    }
+
+    @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        dispose();
     }
 
     interface HtmlCallback {
@@ -119,17 +131,16 @@ public class KWebView extends WebView {
 
         @JavascriptInterface
         public void getSource(String html) {
+            // 加载出了地址
+            if (!html.contains("playwm")) {
+                return;
+            }
+            // 主线程运行取消
+            ((Activity) webView.getContext()).runOnUiThread(() -> webView.dispose());
+            // 回调
             if (htmlCallback != null) {
                 htmlCallback.onHtmlGet(html);
             }
-        }
-    }
-
-    @Override
-    protected void onDetachedFromWindow() {
-        super.onDetachedFromWindow();
-        if (subscribe != null && !subscribe.isDisposed()) {
-            subscribe.dispose();
         }
     }
 }

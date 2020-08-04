@@ -12,17 +12,11 @@
         android:layout_height="1px"
         app:layout_constraintBottom_toBottomOf="parent" />
 
-    <ImageView
-        android:id="@+id/mBigImage"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:scaleType="fitXY" />
-
     <EditText
         android:id="@+id/editText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:hint="输入抖音分享链接"
+        android:hint="@string/input_share_text"
         android:textIsSelectable="true"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
@@ -34,7 +28,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:onClick="button"
-        android:text="开始解析"
+        android:text="@string/start_parse"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -46,7 +40,7 @@
         android:layout_height="wrap_content"
         android:layout_margin="30dp"
         android:onClick="onResultClick"
-        android:text="解析结果显示区"
+        android:text="@string/parse_result_show_rect"
         app:layout_constraintBottom_toTopOf="@+id/editText"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"

@@ -8,9 +8,10 @@
 
 ### 下载链接
 
-[APP下载](https://gitee.com/haowenhello/DouyinK/raw/master/apks/douyink.apk)
+[APP下载](https://github.com/HaowenLee/DouyinK/blob/master/apks/douyink.apk)
 
 ### 历史记录
 
+- 间隔轮询获取html内容直至获取到有效内容（2020-08-04|1.0.4）
 - 通过WebView加载分享链接获取网页内容解析视频地址（2020-06-29|1.0.3）
 - 获取视频播放地址逻辑修改（2020-04-29|1.0.2）
