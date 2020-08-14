@@ -19,6 +19,7 @@ import com.blankj.utilcode.util.ToastUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -56,7 +57,8 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> ToastUtils.showShort("网页内容获取失败"));
             return;
         }
-        Element theVideo = document.getElementById("theVideo");
+        // 直接查找video标签
+        Elements theVideo = document.getElementsByTag("video");
         if (theVideo == null) {
             runOnUiThread(() -> ToastUtils.showShort("视频标签获取失败"));
             return;
