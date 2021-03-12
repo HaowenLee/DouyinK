@@ -131,10 +131,6 @@ public class KWebView extends WebView {
 
         @JavascriptInterface
         public void getSource(String html) {
-            // 加载出了地址
-            if (!html.contains("playwm")) {
-                return;
-            }
             // 主线程运行取消
             ((Activity) webView.getContext()).runOnUiThread(() -> webView.dispose());
             // 回调

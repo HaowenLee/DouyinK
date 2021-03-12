@@ -18,7 +18,6 @@ import com.blankj.utilcode.util.ToastUtils;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
@@ -45,13 +44,13 @@ public class MainActivity extends AppCompatActivity {
         button = findViewById(R.id.button);
 
         // 网页内容获取回调
-        webView.setHtmlCallback(this::parseHtml);
+        webView.setHtmlCallback(this::parseKuaiShouHtml);
     }
 
     /**
      * 解析网页获取视频播放地址
      */
-    private void parseHtml(String html) {
+    private void parseKuaiShouHtml(String html) {
         Document document = Jsoup.parse(html);
         if (document == null) {
             runOnUiThread(() -> ToastUtils.showShort("网页内容获取失败"));
@@ -68,8 +67,6 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> ToastUtils.showShort("视频地址获取失败"));
             return;
         }
-        // 替换成无水印地址
-        videoUrl = videoUrl.replace("playwm", "play");
         // 获取重定向的URL
         String finalVideoUrl = getRealUrl(videoUrl);
         if (TextUtils.isEmpty(finalVideoUrl)) {
@@ -115,6 +112,45 @@ public class MainActivity extends AppCompatActivity {
         return realUrl;
     }
 
+    /**
+     * 解析网页获取视频播放地址
+     */
+    private void parseDouYinHtml(String html) {
+        Document document = Jsoup.parse(html);
+        if (document == null) {
+            runOnUiThread(() -> ToastUtils.showShort("网页内容获取失败"));
+            return;
+        }
+        // 直接查找video标签
+        Elements theVideo = document.getElementsByTag("video");
+        if (theVideo == null) {
+            runOnUiThread(() -> ToastUtils.showShort("视频标签获取失败"));
+            return;
+        }
+        String videoUrl = theVideo.attr("src");
+        if (TextUtils.isEmpty(videoUrl)) {
+            runOnUiThread(() -> ToastUtils.showShort("视频地址获取失败"));
+            return;
+        }
+        // 替换成无水印地址
+        videoUrl = videoUrl.replace("playwm", "play");
+        // 获取重定向的URL
+        String finalVideoUrl = getRealUrl(videoUrl);
+        if (TextUtils.isEmpty(finalVideoUrl)) {
+            runOnUiThread(() -> ToastUtils.showShort("重新想地址获取失败"));
+            return;
+        }
+        // 跳转下载和视频播放页
+        runOnUiThread(() -> {
+            button.setText("开始解析");
+            button.setEnabled(true);
+            tvResult.setText(finalVideoUrl);
+            Intent intent = new Intent(MainActivity.this, VideoPlayActivity.class);
+            intent.putExtra("video_url", finalVideoUrl);
+            startActivity(intent);
+        });
+    }
+
     @Override
     public void onWindowFocusChanged(boolean hasFocus) {
         super.onWindowFocusChanged(hasFocus);
@@ -124,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
         // 在 Android Q（10）中，应用在前台的时候才可以获取到剪切板内容。
         // https://www.jianshu.com/p/8f2100cd1cc5
         String shareText = getShareText();
-        if (!TextUtils.isEmpty(shareText) && shareText.contains(" https://v.douyin.com/")) {
+        if (!TextUtils.isEmpty(shareText) && (shareText.contains(" v.douyin.com") || shareText.contains(" v.kuaishou.com"))) {
             editText.setText(shareText);
         }
     }
