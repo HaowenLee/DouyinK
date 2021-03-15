@@ -30,7 +30,7 @@ import io.reactivex.schedulers.Schedulers;
  */
 public class KWebView extends WebView {
 
-    private CompositeDisposable compositeDisposable = new CompositeDisposable();
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private HtmlCallback htmlCallback;
 
     public KWebView(Context context) {
@@ -113,7 +113,7 @@ public class KWebView extends WebView {
     }
 
     interface HtmlCallback {
-        void onHtmlGet(String html);
+        boolean onHtmlGet(String html);
     }
 
     /**
@@ -131,11 +131,10 @@ public class KWebView extends WebView {
 
         @JavascriptInterface
         public void getSource(String html) {
-            // 主线程运行取消
-            ((Activity) webView.getContext()).runOnUiThread(() -> webView.dispose());
             // 回调
-            if (htmlCallback != null) {
-                htmlCallback.onHtmlGet(html);
+            if (htmlCallback != null && htmlCallback.onHtmlGet(html)) {
+                // 主线程运行取消
+                ((Activity) webView.getContext()).runOnUiThread(() -> webView.dispose());
             }
         }
     }
