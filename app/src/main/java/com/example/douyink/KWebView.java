@@ -68,13 +68,7 @@ public class KWebView extends WebView {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                dispose();
-                // 定时轮询获取网页内容，直到获取到有效信息
-                compositeDisposable.add(Observable.interval(200, TimeUnit.MILLISECONDS)
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .subscribeOn(Schedulers.io())
-                        .subscribe(integer -> view.loadUrl("javascript:window.java_obj.getSource('<head>'+" +
-                                "document.getElementsByTagName('html')[0].innerHTML+'</head>');")));
+                getHtml();
                 super.onPageFinished(view, url);
             }
 
@@ -86,10 +80,23 @@ public class KWebView extends WebView {
     }
 
     /**
+     * 延迟获取网页内容
+     */
+    private synchronized void getHtml() {
+        dispose();
+        // 延迟获取网页内容
+        compositeDisposable.add(Observable.timer(50, TimeUnit.MILLISECONDS)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(integer -> loadUrl("javascript:window.java_obj.getSource('<head>'+" +
+                        "document.getElementsByTagName('html')[0].innerHTML+'</head>');")));
+    }
+
+    /**
      * 取消订阅
      */
     public void dispose() {
-        compositeDisposable.clear();
+        ((Activity) getContext()).runOnUiThread(compositeDisposable::clear);
     }
 
     public KWebView(Context context, AttributeSet attrs) {
@@ -113,6 +120,12 @@ public class KWebView extends WebView {
     }
 
     interface HtmlCallback {
+        /**
+         * 网页内容获取成功回调
+         *
+         * @param html 网页内容
+         * @return 是否获取到了真实地址
+         */
         boolean onHtmlGet(String html);
     }
 
@@ -131,10 +144,14 @@ public class KWebView extends WebView {
 
         @JavascriptInterface
         public void getSource(String html) {
+            boolean isSuccess = htmlCallback.onHtmlGet(html);
+            if (!isSuccess) {
+                getHtml();
+                return;
+            }
             // 回调
-            if (htmlCallback != null && htmlCallback.onHtmlGet(html)) {
-                // 主线程运行取消
-                ((Activity) webView.getContext()).runOnUiThread(() -> webView.dispose());
+            if (htmlCallback != null && isSuccess) {
+                dispose();
             }
         }
     }

@@ -1,7 +1,5 @@
 package com.example.douyink.parse;
 
-import com.example.douyink.Platform;
-
 /**
  * ================================================
  * 作    者：Herve、Li
