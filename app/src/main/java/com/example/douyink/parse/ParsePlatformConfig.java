@@ -13,5 +13,9 @@ class ParsePlatformConfig {
     /**
      * 解析的平台集合
      */
-    public static final Platform[] platforms = new Platform[]{Platform.DOUYIN, Platform.KUAISHOU};
+    public static final Platform[] platforms = new Platform[]{
+            Platform.DOUYIN,
+            Platform.KUAISHOU,
+            Platform.XIGUA
+    };
 }

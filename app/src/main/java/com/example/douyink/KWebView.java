@@ -7,7 +7,6 @@ import android.graphics.Bitmap;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.AttributeSet;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
@@ -70,7 +69,6 @@ public class KWebView extends WebView {
 
             @Override
             public void onPageFinished(WebView view, String url) {
-                Log.e("web", "onPageFinished " + url);
                 if (TextUtils.equals(url, view.getUrl())) {
                     getHtml();
                 }
@@ -150,7 +148,6 @@ public class KWebView extends WebView {
         @JavascriptInterface
         public void getSource(String html) {
             boolean isSuccess = htmlCallback.onHtmlGet(html);
-            Log.e("web", "getSource" + html + isSuccess);
             if (!isSuccess) {
                 getHtml();
                 return;
