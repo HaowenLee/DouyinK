@@ -1,6 +1,5 @@
 package com.example.douyink.parse;
 
-import com.example.douyink.parse.Parser;
 import com.example.douyink.parse.parser.DouYinParser;
 import com.example.douyink.parse.parser.KuaiShouParser;
 

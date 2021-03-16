@@ -1,7 +1,5 @@
 package com.example.douyink;
 
-import android.content.ClipData;
-import android.content.ClipboardManager;
 import android.content.Intent;
 import android.os.Bundle;
 import android.text.TextUtils;
@@ -21,11 +19,19 @@ import com.example.douyink.parse.error.ParseError;
 import com.example.douyink.utils.ClipboardUtil;
 import com.example.douyink.utils.UrlUtil;
 
+import io.reactivex.BackpressureStrategy;
+import io.reactivex.Flowable;
+import io.reactivex.FlowableOnSubscribe;
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.schedulers.Schedulers;
+
 /**
  * 主页面
  */
 public class MainActivity extends AppCompatActivity {
 
+    private final CompositeDisposable compositeDisposable = new CompositeDisposable();
     private final ParserFactory parserFactory = new ParserFactory();
     private EditText editText;
     private TextView tvResult;
@@ -67,6 +73,12 @@ public class MainActivity extends AppCompatActivity {
         }));
     }
 
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        compositeDisposable.clear();
+    }
+
     /**
      * 窗体得到或失去焦点的时候的时候调用
      *
@@ -99,8 +111,19 @@ public class MainActivity extends AppCompatActivity {
         button.setEnabled(false);
         // 获取解析器
         mParser = parserFactory.getParser(url);
-        // 加载网页
-        webView.loadUrl(url);
+        // 获取重定向地址
+        compositeDisposable.clear();
+        compositeDisposable.add(Flowable.create((FlowableOnSubscribe<String>) emitter -> {
+            String redirectUrl = UrlUtil.getRedirectUrl(url);
+            emitter.onNext(redirectUrl);
+            emitter.onComplete();
+        }, BackpressureStrategy.BUFFER)
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribeOn(Schedulers.io())
+                .subscribe(redirectUrl -> {
+                    // 加载网页
+                    webView.loadUrl(redirectUrl);
+                }));
     }
 
     public void onResultClick(View view) {

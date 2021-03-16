@@ -5,6 +5,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
+import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.webkit.JavascriptInterface;
@@ -13,8 +14,6 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-
-import com.blankj.utilcode.util.LogUtils;
 
 import java.util.concurrent.TimeUnit;
 
@@ -72,7 +71,9 @@ public class KWebView extends WebView {
             @Override
             public void onPageFinished(WebView view, String url) {
                 Log.e("web", "onPageFinished " + url);
-                getHtml();
+                if (TextUtils.equals(url, view.getUrl())) {
+                    getHtml();
+                }
                 super.onPageFinished(view, url);
             }
 
