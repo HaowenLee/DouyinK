@@ -6,12 +6,15 @@ import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Build;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import com.blankj.utilcode.util.LogUtils;
 
 import java.util.concurrent.TimeUnit;
 
@@ -68,6 +71,7 @@ public class KWebView extends WebView {
 
             @Override
             public void onPageFinished(WebView view, String url) {
+                Log.e("web", "onPageFinished " + url);
                 getHtml();
                 super.onPageFinished(view, url);
             }
@@ -145,12 +149,13 @@ public class KWebView extends WebView {
         @JavascriptInterface
         public void getSource(String html) {
             boolean isSuccess = htmlCallback.onHtmlGet(html);
+            Log.e("web", "getSource" + html + isSuccess);
             if (!isSuccess) {
                 getHtml();
                 return;
             }
             // 回调
-            if (htmlCallback != null && isSuccess) {
+            if (htmlCallback != null) {
                 dispose();
             }
         }

@@ -35,4 +35,19 @@ public class ParserFactory {
     private boolean isPlatform(String url, Platform platform) {
         return url.contains(platform.getDomain());
     }
+
+    /**
+     * 是否是支持的平台
+     *
+     * @param url 分享链接文字
+     * @return 是否支持
+     */
+    public boolean isSupportPlatform(String url) {
+        for (Platform platform : ParsePlatformConfig.platforms) {
+            if (isPlatform(url, platform)) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

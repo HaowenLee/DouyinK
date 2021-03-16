@@ -81,11 +81,7 @@ public class MainActivity extends AppCompatActivity {
         // 在 Android Q（10）中，应用在前台的时候才可以获取到剪切板内容。
         // https://www.jianshu.com/p/8f2100cd1cc5
         String shareText = ClipboardUtil.getClipboardText(this);
-
-        // 获取解析器
-        mParser = parserFactory.getParser(shareText);
-
-        if (mParser != null) {
+        if (parserFactory.isSupportPlatform(shareText)) {
             editText.setText(shareText);
         }
     }
@@ -101,6 +97,8 @@ public class MainActivity extends AppCompatActivity {
         }
         button.setText("解析中...");
         button.setEnabled(false);
+        // 获取解析器
+        mParser = parserFactory.getParser(url);
         // 加载网页
         webView.loadUrl(url);
     }
