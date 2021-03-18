@@ -17,6 +17,7 @@ class ParsePlatformConfig {
             Platform.DOUYIN,
             Platform.KUAISHOU,
             Platform.XIGUA,
-            Platform.WEISHI
+            Platform.WEISHI,
+            Platform.BILIBILI
     };
 }

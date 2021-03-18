@@ -21,6 +21,7 @@ import com.liulishuo.filedownloader.BaseDownloadTask;
 import com.liulishuo.filedownloader.FileDownloadListener;
 import com.liulishuo.filedownloader.FileDownloader;
 import com.shuyu.gsyvideoplayer.GSYVideoManager;
+import com.shuyu.gsyvideoplayer.player.IjkPlayerManager;
 import com.shuyu.gsyvideoplayer.utils.GSYVideoType;
 import com.shuyu.gsyvideoplayer.utils.OrientationUtils;
 import com.shuyu.gsyvideoplayer.video.StandardGSYVideoPlayer;
@@ -37,6 +38,7 @@ import io.reactivex.FlowableOnSubscribe;
 import io.reactivex.android.schedulers.AndroidSchedulers;
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
+import tv.danmaku.ijk.media.player.IjkMediaPlayer;
 
 /**
  * ================================================
@@ -81,6 +83,9 @@ public class VideoPlayActivity extends AppCompatActivity {
     }
 
     private void init() {
+        // 关闭日志
+        IjkPlayerManager.setLogLevel(IjkMediaPlayer.IJK_LOG_SILENT);
+
         // 全屏裁减显示，为了显示正常 CoverImageView 建议使用FrameLayout作为父布局
         GSYVideoType.setShowType(GSYVideoType.SCREEN_TYPE_FULL);
 

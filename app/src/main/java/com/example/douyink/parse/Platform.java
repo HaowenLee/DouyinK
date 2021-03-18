@@ -1,5 +1,6 @@
 package com.example.douyink.parse;
 
+import com.example.douyink.parse.parser.BiLiBiLiParser;
 import com.example.douyink.parse.parser.DouYinParser;
 import com.example.douyink.parse.parser.KuaiShouParser;
 import com.example.douyink.parse.parser.WeiShiParser;
@@ -22,7 +23,9 @@ public enum Platform {
     // 西瓜
     XIGUA("v.ixigua.com", new XiGuaParser()),
     // 腾讯微视
-    WEISHI("isee.weishi.qq.com", new WeiShiParser());
+    WEISHI("isee.weishi.qq.com", new WeiShiParser()),
+    // bilibili
+    BILIBILI("b23.tv", new BiLiBiLiParser());
 
     private final String domain;
     private final Parser parser;
