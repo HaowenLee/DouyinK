@@ -2,6 +2,7 @@ package com.example.douyink.parse;
 
 import com.example.douyink.parse.parser.DouYinParser;
 import com.example.douyink.parse.parser.KuaiShouParser;
+import com.example.douyink.parse.parser.WeiShiParser;
 import com.example.douyink.parse.parser.XiGuaParser;
 
 /**
@@ -19,7 +20,9 @@ public enum Platform {
     // 快手
     KUAISHOU("v.kuaishou.com", new KuaiShouParser()),
     // 西瓜
-    XIGUA("v.ixigua.com", new XiGuaParser());
+    XIGUA("v.ixigua.com", new XiGuaParser()),
+    // 腾讯微视
+    WEISHI("isee.weishi.qq.com", new WeiShiParser());
 
     private final String domain;
     private final Parser parser;

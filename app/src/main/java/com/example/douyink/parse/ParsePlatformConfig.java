@@ -16,6 +16,7 @@ class ParsePlatformConfig {
     public static final Platform[] platforms = new Platform[]{
             Platform.DOUYIN,
             Platform.KUAISHOU,
-            Platform.XIGUA
+            Platform.XIGUA,
+            Platform.WEISHI
     };
 }

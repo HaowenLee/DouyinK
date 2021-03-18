@@ -3,7 +3,9 @@ package com.example.douyink;
 import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
+import android.net.Uri;
 import android.os.Build;
 import android.text.TextUtils;
 import android.util.AttributeSet;
@@ -13,6 +15,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+
+import com.blankj.utilcode.util.ActivityUtils;
 
 import java.util.concurrent.TimeUnit;
 
@@ -58,8 +62,19 @@ public class KWebView extends WebView {
         setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
-                return true;
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    view.loadUrl(url);
+                    return true;
+                } else {
+                    try {
+                        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                        ActivityUtils.startActivity(intent);
+                        return true;
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                        return false;
+                    }
+                }
             }
 
             @Override
