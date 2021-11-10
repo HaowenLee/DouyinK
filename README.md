@@ -21,3 +21,7 @@
 ### 最后
 
 **Java接口形式，支持更多平台：[https://github.com/HaowenLee/bare](https://github.com/HaowenLee/bare)**
+
+### 小程序
+
+<img src="https://github.com/HaowenLee/DouyinK/blob/master/material/mp_code.png" width="200" height="200" alt="微信小程序"/>
